@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -28,7 +29,7 @@ import rx.schedulers.Schedulers;
  * WordBookActivity
  * Created by tianbin on 2017/8/13.
  */
-public class WordBookActivity extends AppCompatActivity {
+public class WordBookActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener {
 
     private static final String COOKIE = "cookie";
 
@@ -42,6 +43,7 @@ public class WordBookActivity extends AppCompatActivity {
 
     private TextView mTvWordNum;
     private RecyclerView mRecyclerView;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
     private WordbookAdapter mWordbookAdapter;
 
     private YouDaoSpider mYouDaoSpider;
@@ -68,6 +70,9 @@ public class WordBookActivity extends AppCompatActivity {
         mWordbookAdapter = new WordbookAdapter();
         mRecyclerView.setAdapter(mWordbookAdapter);
 
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
+        mSwipeRefreshLayout.setOnRefreshListener(this);
+        mSwipeRefreshLayout.setRefreshing(true);
         fetchWordbook();
     }
 
@@ -89,6 +94,7 @@ public class WordBookActivity extends AppCompatActivity {
                 .subscribe(new Action1<Wordbook>() {
                     @Override
                     public void call(Wordbook wordbook) {
+                        mSwipeRefreshLayout.setRefreshing(false);
                         if (wordbook != null && wordbook.wordList != null && !wordbook.wordList.isEmpty()) {
                             mTvWordNum.setText(getString(R.string.word_count, wordbook.wordCount));
                             mWordbookAdapter.setNewData(wordbook.wordList);
@@ -97,6 +103,7 @@ public class WordBookActivity extends AppCompatActivity {
                 }, new Action1<Throwable>() {
                     @Override
                     public void call(Throwable throwable) {
+                        mSwipeRefreshLayout.setRefreshing(false);
                         Log.e(TAG, throwable.toString());
                     }
                 });
@@ -108,5 +115,10 @@ public class WordBookActivity extends AppCompatActivity {
 
     public int dp2px(float dpValue) {
         return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpValue, getResources().getDisplayMetrics());
+    }
+
+    @Override
+    public void onRefresh() {
+        fetchWordbook();
     }
 }

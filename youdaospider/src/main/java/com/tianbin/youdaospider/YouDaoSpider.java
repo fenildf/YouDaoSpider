@@ -9,14 +9,11 @@ import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
-import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -93,7 +90,7 @@ public class YouDaoSpider {
         if (youDaoWordbook.wordCount == 0) {
             return youDaoWordbook;
         }
-        youDaoWordbook.pageCount = getPageCount(document);
+        youDaoWordbook.pageCount = getPageCount(cookie);
 
         parseWords(youDaoWordbook.pageCount, youDaoWordbook, cookieMap);
         return youDaoWordbook;
@@ -115,31 +112,19 @@ public class YouDaoSpider {
         return Integer.parseInt(wordCountElement.childNodes().get(0).toString());
     }
 
-    private int getPageCount(Document document) {
-        int maxPageNum = 0;
-        Element pageCountElement = document.getElementById(Constants.ElementId.PAGINATION);
-        if (pageCountElement == null) {
-            return 1;
-        }
-        for (Node childNode : pageCountElement.childNodes()) {
-            if (childNode instanceof Element) {
-                final List<Node> nodes = childNode.childNodes();
-                if (nodes.size() > 0) {
-                    final Node node = nodes.get(0);
-                    if (node instanceof TextNode) {
-                        final String wholeText = ((TextNode) node).getWholeText();
-                        if (wholeText.matches("^-?\\d+$")) {
-                            final int pageNum = Integer.parseInt(wholeText);
-                            if (maxPageNum < pageNum) {
-                                maxPageNum = pageNum;
-                            }
-                        }
-                        System.out.println(wholeText);
-                    }
-                }
+    private int getPageCount(String cookie) {
+        int pageCount = 0;
+        try {
+            int wordCount = fetchWordCount(cookie);
+            if (wordCount % 15 == 0) {
+                pageCount = wordCount / 15;
+            } else {
+                pageCount = wordCount / 15 + 1;
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return maxPageNum;
+        return pageCount;
     }
 
     private void parseWords(int pageCount, Wordbook wordbook, Map<String, String> cookieMap) throws IOException {
